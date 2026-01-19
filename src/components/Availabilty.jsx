@@ -247,19 +247,43 @@ function Availability() {
               </label>
               <label>
                 Start time:
-                <input
-                  type="time"
+                <select
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                />
+                >
+                  <option value="">Select hour</option>
+                  {Array.from(
+                    { length: WORKDAY_END_TIME - WORKDAY_START_TIME + 1 },
+                    (_, index) => WORKDAY_START_TIME + index
+                  ).map((hour) => {
+                    const label = `${String(hour).padStart(2, "0")}:00`;
+                    return (
+                      <option key={hour} value={label}>
+                        {label}
+                      </option>
+                    );
+                  })}
+                </select>
               </label>
               <label>
                 End time:
-                <input
-                  type="time"
+                <select
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
-                />
+                >
+                  <option value="">Select hour</option>
+                  {Array.from(
+                    { length: WORKDAY_END_TIME - WORKDAY_START_TIME + 1 },
+                    (_, index) => WORKDAY_START_TIME + index
+                  ).map((hour) => {
+                    const label = `${String(hour).padStart(2, "0")}:00`;
+                    return (
+                      <option key={hour} value={label}>
+                        {label}
+                      </option>
+                    );
+                  })}
+                </select>
               </label>
             </div>
             <button type="submit" className={styles.submitButton}>
