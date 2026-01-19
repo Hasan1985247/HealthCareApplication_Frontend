@@ -8,10 +8,10 @@ const WORKDAY_END_TIME = 17;
 
 function Availability() {
   const {
-    authState: { user },
+    authState: { user, roles },
   } = useAuth();
 
-  //Recommended to use useMemo for static data like hourly slots if not creating new data each time. 
+  //Recommended to use useMemo for static data like hourly slots if not creating new data each time.
   const hourlySlots = useMemo(
     () =>
       Array.from(
@@ -37,6 +37,16 @@ function Availability() {
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+
+  // Local state for PROVIDER availability creation form
+  const [formDate, setFormDate] = useState(() => {
+    const today = new Date();
+    return today.toISOString().slice(0, 10);
+  });
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [formError, setFormError] = useState("");
 
   useEffect(() => {
     // Don't fetch if no user is available
@@ -177,10 +187,96 @@ function Availability() {
         </label>
       </section>
 
+      {/* Provider-only availability creation form */}
+      {roles?.includes("PROVIDER") && (
+        <section className={styles.createSection}>
+          <h3 className={styles.createTitle}>Create Availability</h3>
+          <form
+            className={styles.createForm}
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setFormError("");
+              setSuccessMessage("");
+
+              if (!formDate || !startTime || !endTime) {
+                setFormError("All fields are required.");
+                return;
+              }
+
+              // Ensure format HH:MM and that start < end
+              const start = startTime.slice(0, 5);
+              const end = endTime.slice(0, 5);
+
+              if (start >= end) {
+                setFormError("Start time must be earlier than end time.");
+                return;
+              }
+
+              try {
+                await axios.post(
+                  "http://localhost:8080/availability/create",
+                  {
+                    date: formDate,
+                    startTime: start,
+                    endTime: end,
+                  },
+                  { withCredentials: true }
+                );
+
+                setSuccessMessage("Availability created successfully.");
+                // Optionally reset times but keep date
+                setStartTime("");
+                setEndTime("");
+              } catch (err) {
+                console.error("Failed to create availability:", err);
+                setFormError(
+                  err.response?.data?.message ||
+                    "Could not create availability. Please try again."
+                );
+              }
+            }}
+          >
+            <div className={styles.formRow}>
+              <label>
+                Date:
+                <input
+                  type="date"
+                  value={formDate}
+                  onChange={(e) => setFormDate(e.target.value)}
+                />
+              </label>
+              <label>
+                Start time:
+                <input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                />
+              </label>
+              <label>
+                End time:
+                <input
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                />
+              </label>
+            </div>
+            <button type="submit" className={styles.submitButton}>
+              Create availability
+            </button>
+          </form>
+        </section>
+      )}
+
       {loading && (
         <p className={styles.loadingMessage}>Loading availability...</p>
       )}
       {error && <p className={styles.errorMessage}>{error}</p>}
+      {formError && <p className={styles.errorMessage}>{formError}</p>}
+      {successMessage && (
+        <p className={styles.successMessage}>{successMessage}</p>
+      )}
 
       <section>
         <div className={styles.slotsGrid}>

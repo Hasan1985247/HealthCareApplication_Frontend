@@ -25,6 +25,44 @@
   margin-bottom: 1.5rem;
 }
 
+.createSection {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border-radius: 8px;
+  background-color: #f3f4f6;
+}
+
+.createTitle {
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+}
+
+.createForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.formRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.submitButton {
+  align-self: flex-start;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: none;
+  background-color: #2563eb;
+  color: white;
+  cursor: pointer;
+}
+
+.submitButton:hover {
+  background-color: #1d4ed8;
+}
+
 .slotsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -53,5 +91,10 @@
 
 .errorMessage {
   color: #dc2626;
+  margin-bottom: 1rem;
+}
+
+.successMessage {
+  color: #16a34a;
   margin-bottom: 1rem;
 }
