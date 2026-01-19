@@ -35,6 +35,7 @@ function Availability() {
       isAvailable: false,
     }))
   );
+  const [availabilityEntries, setAvailabilityEntries] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -57,6 +58,7 @@ function Availability() {
           isAvailable: false,
         }))
       );
+      setAvailabilityEntries([]);
       return;
     }
 
@@ -92,11 +94,15 @@ function Availability() {
 
         const data = response.data || [];
 
-        //Build a set of available hours for the selected date
+        // Build a set of available HOURS for the selected date so we can create the hour-slots.
+        // Also keep the raw availability entries so we can show a list (with DI) for deletion.
         const availableHours = new Set();
+        const entriesForSelectedDate = [];
 
         data.forEach((a) => {
-          // Backend can return "2026-01-31" or "2026-01-31T00:00:00" or full ISO "datestring.
+          // Backend can return date in multiple formats like:
+          // "2026-01-31" or "2026-01-31T00:00:00" or full ISO string.
+          //  Normalize to "YYYY-MM-DD" before comparing with `selectedDate`.
           const availabilityDate = a.date
             ? a.date.toString().slice(0, 10)
             : null;
@@ -108,11 +114,10 @@ function Availability() {
             matchesSelectedDate: availabilityDate === selectedDate,
           });
 
-          // Only process availability for the selected date
+          // Only process availability for the selected date (ignore other days returned by the range query)
           if (availabilityDate === selectedDate) {
-            //Parse startTime and endTime (format "09:00")
-            // Handle both "09:00" and "09:00:00" formats
-            //When writing tests for this it wanted the :00 (seconds) at the end of the time string, so to be sure its working I added it.
+            entriesForSelectedDate.push(a);
+            // Parse startTime/endTime from the backend.
             const startTimeStr = a.startTime.toString();
             const endTimeStr = a.endTime.toString();
             const startHour = Number(startTimeStr.slice(0, 2));
@@ -122,7 +127,7 @@ function Availability() {
               `Marking hours ${startHour} to ${endHour} as available`
             );
 
-            //Mark all hours [startHour, endHour] as available
+            // Mark all hours [startHour, endHour) as available.
             for (let h = startHour; h < endHour; h++) {
               availableHours.add(h);
             }
@@ -131,12 +136,13 @@ function Availability() {
 
         console.log("Available hours set:", Array.from(availableHours).sort());
 
-        //Map availability to hourly slots
+        // Map the availability hours to our static hourly slot list for the grid.
         const mappedSlots = hourlySlots.map((slot) => ({
           ...slot,
           isAvailable: availableHours.has(slot.start),
         }));
 
+        setAvailabilityEntries(entriesForSelectedDate);
         setSlots(mappedSlots);
       } catch (err) {
         if (err.name !== "CanceledError" && err.name !== "AbortError") {
@@ -153,6 +159,7 @@ function Availability() {
               isAvailable: false,
             }))
           );
+          setAvailabilityEntries([]);
         }
       } finally {
         setLoading(false);
@@ -198,12 +205,13 @@ function Availability() {
               setFormError("");
               setSuccessMessage("");
 
+              // all fields required
               if (!formDate || !startTime || !endTime) {
                 setFormError("All fields are required.");
                 return;
               }
 
-              // Ensure format HH:MM and that start < end
+              // Ensure format XX:XX and that start < end.
               const start = startTime.slice(0, 5);
               const end = endTime.slice(0, 5);
 
@@ -252,6 +260,7 @@ function Availability() {
                   onChange={(e) => setStartTime(e.target.value)}
                 >
                   <option value="">Select hour</option>
+                  {/* Hour-only options so minutes cannot be changed (13:00, 14:00 etc) */}
                   {Array.from(
                     { length: WORKDAY_END_TIME - WORKDAY_START_TIME + 1 },
                     (_, index) => WORKDAY_START_TIME + index
@@ -272,6 +281,7 @@ function Availability() {
                   onChange={(e) => setEndTime(e.target.value)}
                 >
                   <option value="">Select hour</option>
+                  {/* Hour-only options so minutes cannot be changed (13:00, 14:00 etc) */}
                   {Array.from(
                     { length: WORKDAY_END_TIME - WORKDAY_START_TIME + 1 },
                     (_, index) => WORKDAY_START_TIME + index
@@ -300,6 +310,108 @@ function Availability() {
       {formError && <p className={styles.errorMessage}>{formError}</p>}
       {successMessage && (
         <p className={styles.successMessage}>{successMessage}</p>
+      )}
+
+      {/* Provider-only list of availability entries with delete actions */}
+      {roles?.includes("PROVIDER") && availabilityEntries.length > 0 && (
+        <section className={styles.entriesSection}>
+          <h3 className={styles.entriesTitle}>Your availability entries</h3>
+          <ul className={styles.entriesList}>
+            {availabilityEntries
+              .slice()
+              .sort((a, b) =>
+                String(a.startTime).localeCompare(String(b.startTime))
+              )
+              .map((a) => {
+                // We need id to call DELETE /availability/:id
+                const id = a.id ?? a.availabilityId ?? a.availabiltyId;
+                const start = String(a.startTime).slice(0, 5);
+                const end = String(a.endTime).slice(0, 5);
+
+                return (
+                  <li
+                    key={id ?? `${a.date}-${start}-${end}`}
+                    className={styles.entryRow}
+                  >
+                    <span className={styles.entryText}>
+                      {selectedDate}: {start} – {end}
+                    </span>
+                    <button
+                      type="button"
+                      className={styles.deleteButton}
+                      onClick={async () => {
+                        setFormError("");
+                        setSuccessMessage("");
+
+                        //cannot call DELETE without an id
+                        if (!id) {
+                          setFormError(
+                            "Cannot delete this entry because its id is missing from the API response."
+                          );
+                          return;
+                        }
+
+                        // Confirmation
+                        const ok = window.confirm(
+                          `Delete availability for ${selectedDate} from ${start} to ${end}?`
+                        );
+                        if (!ok) return;
+
+                        try {
+                          // Backend: DELETE /availability/:id
+                          await axios.delete(
+                            `http://localhost:8080/availability/${id}`,
+                            { withCredentials: true }
+                          );
+
+                          // Update the entries list immediately (no refetch needed)
+                          setAvailabilityEntries((prev) =>
+                            prev.filter(
+                              (x) =>
+                                (x.id ??
+                                  x.availabilityId ??
+                                  x.availabiltyId) !== id
+                            )
+                          );
+
+                          // Update the timeslots hour-grid by removing these slots.
+                          // This assumes availability entries map to whole hours (which I fixed in last edit).
+                          const startHour = Number(
+                            String(a.startTime).slice(0, 2)
+                          );
+                          const endHour = Number(String(a.endTime).slice(0, 2));
+                          setSlots((prevSlots) =>
+                            prevSlots.map((slot) => {
+                              if (
+                                slot.start >= startHour &&
+                                slot.start < endHour
+                              ) {
+                                return { ...slot, isAvailable: false };
+                              }
+                              return slot;
+                            })
+                          );
+
+                          // Show a success message so the user knows it worked
+                          setSuccessMessage(
+                            "Availability deleted successfully."
+                          );
+                        } catch (err) {
+                          console.error("Failed to delete availability:", err);
+                          setFormError(
+                            err.response?.data?.message ||
+                              "Could not delete availability. Please try again."
+                          );
+                        }
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </li>
+                );
+              })}
+          </ul>
+        </section>
       )}
 
       <section>

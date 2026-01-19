@@ -98,3 +98,53 @@
   color: #16a34a;
   margin-bottom: 1rem;
 }
+
+.entriesSection {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+}
+
+.entriesTitle {
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+}
+
+.entriesList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.entryRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+}
+
+.entryText {
+  font-size: 0.95rem;
+}
+
+.deleteButton {
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #dc2626;
+  background-color: #fee2e2;
+  color: #991b1b;
+  cursor: pointer;
+}
+
+.deleteButton:hover {
+  background-color: #fecaca;
+}
