@@ -221,7 +221,7 @@ function Availability() {
               }
 
               try {
-                await axios.post(
+                const response = await axios.post(
                   "http://localhost:8080/availability/create",
                   {
                     date: formDate,
@@ -235,6 +235,36 @@ function Availability() {
                 // Optionally reset times but keep date
                 setStartTime("");
                 setEndTime("");
+
+                // Keep the UI up to date creating availability:
+                // 1) If we are already looking at formDate, update the grid + list.
+                // 2) If we created for another date, switch the grid to that date so the user sees the new availability.
+                const created = response?.data;
+                const targetDate = formDate;
+
+                if (targetDate === selectedDate) {
+                  // Update entries list 
+                  if (created) {
+                    setAvailabilityEntries((prev) => [...prev, created]);
+                  }
+
+                  // Update the timeslot UI locally for the created range.
+                  const startHour = Number(start.slice(0, 2));
+                  const endHour = Number(end.slice(0, 2));
+
+                  setSlots((prevSlots) =>
+                    prevSlots.map((slot) => {
+                      if (slot.start >= startHour && slot.start < endHour) {
+                        return { ...slot, isAvailable: true };
+                      }
+                      return slot;
+                    })
+                  );
+                } else {
+                  // Navigate the grid to the date we just created availability for.
+                  // Does a refetch via the useEffect that depending on selectedDate.
+                  setSelectedDate(targetDate);
+                }
               } catch (err) {
                 console.error("Failed to create availability:", err);
                 setFormError(
