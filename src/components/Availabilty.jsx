@@ -117,7 +117,7 @@ function Availability() {
           // Only process availability for the selected date (ignore other days returned by the range query)
           if (availabilityDate === selectedDate) {
             entriesForSelectedDate.push(a);
-            // Parse startTime/endTime from the backend.
+            // Parse startTime/endTime from the backend
             const startTimeStr = a.startTime.toString();
             const endTimeStr = a.endTime.toString();
             const startHour = Number(startTimeStr.slice(0, 2));
@@ -127,7 +127,7 @@ function Availability() {
               `Marking hours ${startHour} to ${endHour} as available`
             );
 
-            // Mark all hours [startHour, endHour) as available.
+            // Mark all hours [startHour, endHour) as available
             for (let h = startHour; h < endHour; h++) {
               availableHours.add(h);
             }
@@ -136,7 +136,7 @@ function Availability() {
 
         console.log("Available hours set:", Array.from(availableHours).sort());
 
-        // Map the availability hours to our static hourly slot list for the grid.
+        // Map the availability hours to our static hourly slot list for the grid
         const mappedSlots = hourlySlots.map((slot) => ({
           ...slot,
           isAvailable: availableHours.has(slot.start),
