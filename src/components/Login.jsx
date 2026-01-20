@@ -35,12 +35,8 @@ function Login() {
         roles: roles,
       });
 
-      // Redirect based on user role
-      if (roles.includes("ADMIN")) {
-        navigate("/admin/dashboard", { replace: true });
-      } else {
-        navigate("/user/dashboard", { replace: true });
-      }
+      // After successful login, take user to the Hub page
+      navigate("/hub", { replace: true });
     } catch (error) {
       console.error("Login failed:", error.response || error);
       setError("Invalid username or password");
