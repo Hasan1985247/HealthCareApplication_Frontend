@@ -14,6 +14,8 @@ import Home from "./components/Home";
 import RequireAuth from "./components/RequireAuth";
 import GlobalStyle from "./styles/GlobalStyle";
 import Availability from "./components/Availabilty";
+import Hub from "./components/Hub";
+import Appointment from "./components/Appointment";
 
 // AuthProvider must wrap Router to ensure auth state is available to all routes
 function App() {
@@ -51,6 +53,22 @@ function App() {
               element={
                 <RequireAuth allowedRoles={["ADMIN"]}>
                   <AdminDashboard />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/hub"
+              element={
+                <RequireAuth allowedRoles={["PATIENT", "PROVIDER", "ADMIN"]}>
+                  <Hub />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/appointment"
+              element={
+                <RequireAuth allowedRoles={["PATIENT", "PROVIDER", "ADMIN"]}>
+                  <Appointment />
                 </RequireAuth>
               }
             />
